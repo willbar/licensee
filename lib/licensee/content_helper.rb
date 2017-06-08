@@ -5,11 +5,13 @@ module Licensee
   module ContentHelper
     DIGEST = Digest::SHA1
     END_OF_TERMS_REGEX = /^\s*end of terms and conditions\s*$/i
+    HR_REGEX = /^\s*[=-]{4,}/
     ALT_TITLE_REGEX = {
       'bsd-2-clause'       => /bsd 2-clause( \"simplified\")? license/i,
       'bsd-3-clause'       => /bsd 3-clause( \"new\" or \"revised\")? license/i,
       'bsd-3-clause-clear' => /bsd 3-clause( clear)? license/i
     }.freeze
+    MAX_SCALED_DELTA = 150
 
     # A set of each word in the license, without duplicates
     def wordset
@@ -27,7 +29,7 @@ module Licensee
     # Number of characters that could be added/removed to still be
     # considered a potential match
     def max_delta
-      (length * Licensee.inverse_confidence_threshold).to_i
+      scaled_delta < MAX_SCALED_DELTA ? scaled_delta : MAX_SCALED_DELTA
     end
 
     # Given another license or project file, calculates the difference in length
@@ -55,6 +57,8 @@ module Licensee
     def content_without_title_and_version
       @content_without_title_and_version ||= begin
         string = content.strip
+        string = strip_markdown_headings(string)
+        string = strip_hrs(string)
         string = strip_title(string) while string =~ title_regex
         strip_version(string).strip
       end
@@ -68,7 +72,6 @@ module Licensee
         while string =~ Matchers::Copyright::REGEX
           string = strip_copyright(string)
         end
-        string = strip_hrs(string)
         string, _partition, _instructions = string.partition(END_OF_TERMS_REGEX)
         strip_whitespace(string)
       end
@@ -101,11 +104,20 @@ module Licensee
 
     # Strip HRs from MPL
     def strip_hrs(string)
-      string.gsub(/[=-]{4,}/, '')
+      string.gsub HR_REGEX, ''
+    end
+
+    # Strip leading #s from the document
+    def strip_markdown_headings(string)
+      string.sub(/\A\s*#+/, '').strip
     end
 
     def strip_whitespace(string)
       string.tr("\n", ' ').squeeze(' ').strip
+    end
+
+    def scaled_delta
+      @scaled_delta ||= (length * Licensee.inverse_confidence_threshold).to_i
     end
   end
 end

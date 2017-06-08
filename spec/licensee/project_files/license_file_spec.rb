@@ -56,6 +56,10 @@ RSpec.describe Licensee::Project::LicenseFile do
       'mit-license-foo.md' => 0.4,
       'COPYING-GPL'        => 0.3,
       'COPYRIGHT-BSD'      => 0.3,
+      'OFL.md'             => 0.2,
+      'ofl.textile'        => 0.1,
+      'ofl'                => 0.05,
+      'not-the-ofl'        => 0.0,
       'README.txt'         => 0.0
     }.each do |filename, expected|
       context "a file named #{filename}" do
@@ -86,7 +90,7 @@ RSpec.describe Licensee::Project::LicenseFile do
     end
 
     context 'preferred license regex' do
-      %w(md markdown txt).each do |ext|
+      %w[md markdown txt].each do |ext|
         it "matches .#{ext}" do
           expect(described_class::PREFERRED_EXT_REGEX).to match(".#{ext}")
         end
@@ -112,7 +116,7 @@ RSpec.describe Licensee::Project::LicenseFile do
     end
 
     context 'license regex' do
-      %w(LICENSE licence unlicense LICENSE-MIT MIT-LICENSE).each do |license|
+      %w[LICENSE licence unlicense LICENSE-MIT MIT-LICENSE].each do |license|
         it "matches #{license}" do
           expect(described_class::LICENSE_REGEX).to match(license)
         end
@@ -120,7 +124,7 @@ RSpec.describe Licensee::Project::LicenseFile do
     end
 
     context 'copying regex' do
-      %w(COPYING copyright).each do |copying|
+      %w[COPYING copyright].each do |copying|
         it "matches #{copying}" do
           expect(described_class::COPYING_REGEX).to match(copying)
         end
@@ -156,6 +160,21 @@ RSpec.describe Licensee::Project::LicenseFile do
 
     context 'CC-BY-ND' do
       let(:content) { 'Attribution-NoDerivatives 4.0 International' }
+
+      it "knows it's a potential false positive" do
+        expect(subject.content).to match(regex)
+        expect(subject).to be_a_potential_false_positive
+      end
+    end
+
+    context 'CC-BY-ND with leading instructions' do
+      let(:content) do
+        <<-EOS
+Creative Commons Corporation ("Creative Commons") is not a law firm
+======================================================================
+Creative Commons Attribution-NonCommercial 4.0
+        EOS
+      end
 
       it "knows it's a potential false positive" do
         expect(subject.content).to match(regex)

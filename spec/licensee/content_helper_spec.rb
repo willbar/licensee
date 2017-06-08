@@ -9,21 +9,22 @@ end
 
 RSpec.describe Licensee::ContentHelper do
   let(:content) do
-    <<-EOS.freeze
-The MIT License
+    <<-EOS.freeze.gsub(/^\s*/, '')
+  # The MIT License
+  =================
 
-Copyright 2016 Ben Balter
+  Copyright 2016 Ben Balter
 
-The made
-up  license.
------------
+  The made
+  up  license.
+  -----------
 EOS
   end
   subject { ContentHelperTestHelper.new(content) }
   let(:mit) { Licensee::License.find('mit') }
 
   it 'creates the wordset' do
-    expect(subject.wordset).to eql(Set.new(%w(the made up license)))
+    expect(subject.wordset).to eql(Set.new(%w[the made up license]))
   end
 
   it 'knows the length' do
@@ -32,6 +33,14 @@ EOS
 
   it 'knows the max delta' do
     expect(subject.max_delta).to eql(1)
+  end
+
+  context 'a very long license' do
+    let(:content) { 'license' * 1000 }
+
+    it 'does not return a max delta larger than 150' do
+      expect(subject.max_delta).to eql(150)
+    end
   end
 
   it 'knows the length delta' do
@@ -71,6 +80,10 @@ EOS
 
     it 'strips whitespace' do
       expect(normalized_content).to_not match(/\n/)
+    end
+
+    it 'strips markdown headings' do
+      expect(normalized_content).to_not match('#')
     end
 
     Licensee::License.all(hidden: true).each do |license|

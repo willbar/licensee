@@ -5,7 +5,7 @@ AllCops:
     - test/fixtures/**/*
     - test/functions.rb
 
-Style/AlignHash:
+Layout/AlignHash:
   EnforcedHashRocketStyle: table
   EnforcedColonStyle: table
 
@@ -27,4 +27,7 @@ Metrics/ClassLength:
   Enabled: false
 
 Metrics/AbcSize:
+  Enabled: false
+
+Layout/IndentHeredoc:
   Enabled: false
